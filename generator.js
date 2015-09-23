@@ -54,12 +54,14 @@ function Generator(dimention) {
             var rowA = '';
             var rowB = '';
             var rowC = '';
+            var rowD = '';
             for (var j = 0; j < y; j++) {
                 var room = maze[i][j];
                 var roomRepresentation = room.draw().split('\n');
                 rowA += roomRepresentation[0];
                 rowB += roomRepresentation[1];
                 rowC += roomRepresentation[2];
+                rowD += roomRepresentation[3];
 
                 // rowA += room.canMove(C.Directions.UP) ? '+  ' : '+--';
                 //
@@ -74,10 +76,10 @@ function Generator(dimention) {
                 //     rowC += '+';
                 // }
             }
-            rowA
             console.log(rowA);
             console.log(rowB);
             console.log(rowC);
+            console.log(rowD);
         }
     }
 
