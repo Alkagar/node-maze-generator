@@ -1,38 +1,43 @@
 var E = require('./errors.js');
 var C = require('./const.js');
 
-module.exports = Cell;
+module.exports = Room;
 
-function Cell() {
+function Room() {
     var obj = {};
 
-    // possible directories to move
-    var dirs = [
-        C.Directions.UP,
-        C.Directions.DOWN,
-        C.Directions.LEFT,
-        C.Directions.RIGHT,
-    ];
-
-    // cell status
+    // room status
     var visitCount = 0;
     var walls = {};
     var locked = false;
+    var position = [0, 0];
+    var mazeSize = [1, 1];
+    var maze = [
+        [obj]
+    ];
 
     // basic walls setup
-    walls.up = true;
-    walls.down = true;
-    walls.left = true;
-    walls.right = true;
+    walls.UP = true;
+    walls.DOWN = true;
+    walls.LEFT = true;
+    walls.RIGHT = true;
 
     // exposed functions
     obj.getWalls = getWalls;
     obj.canMove = canMove;
     obj.setWall = setWall;
-    obj.lockCell = lockCell;
-    obj.isLocked = isLocked;
+    obj.buildRoom = buildRoom;
+    obj.isBuilded = isBuilded;
     obj.visit = visit;
     obj.wasVisited = wasVisited;
+    obj.draw = draw;
+    obj.setPosition = setPosition;
+    obj.getPosition = getPosition;
+    obj.setMazeSize = setMazeSize;
+    obj.getMazeSize = getMazeSize;
+    obj.canOpenWall = canOpenWall;
+    obj.getPossibleDirections = getPossibleDirections;
+    obj.getVisitedTimes = getVisitedTimes;
 
     /**
      * Define if user can move in provided direction.
@@ -41,25 +46,45 @@ function Cell() {
      * @throws {NotPossibleDirectionError}
      */
     function canMove(dir) {
-        if (dirs.indexOf(dir) === -1) {
+        if (C.PossibleDirections.indexOf(dir) === -1) {
             throw new E.NotPossibleDirectionError();
         }
         return !walls[dir];
     }
 
-    function lockCell() {
+    function getPossibleDirections() {
+        return C.PossibleDirections;
+    }
+
+    function buildRoom() {
         locked = true;
     };
 
-    function isLocked() {
+    function isBuilded() {
         return locked;
     };
 
+    function setMazeSize(size) {
+        mazeSize = size;
+    }
+
+    function getMazeSize() {
+        return mazeSize;
+    }
+
+    function setPosition(pos) {
+        position = pos;
+    }
+
+    function getPosition() {
+        return position;
+    }
+
     function setWall(dir, wall) {
-        if (dirs.indexOf(dir) === -1) {
+        if (C.PossibleDirections.indexOf(dir) === -1) {
             throw new E.NotPossibleDirectionError();
         }
-        if(isLocked()) {
+        if (isBuilded()) {
             throw new E.UpdateLockedCellError();
         }
 
@@ -74,9 +99,56 @@ function Cell() {
         return visitCount > 0;
     }
 
+    function getVisitedTimes() {
+        return visitCount;
+    }
+
     function getWalls() {
         return walls;
     }
 
+
+    function draw() {
+        var representation = '';
+        representation += '+UP+\n';
+        representation += 'LEFT    RIGHT\n';
+        representation += 'LEFT    RIGHT\n';
+        representation += '+DOWN+\n';
+        representation = representation.replace('UP', (walls.UP ? '----' : '    '));
+        representation = representation.replace(/RIGHT/g, (walls.RIGHT ? '|' : ' '));
+        representation = representation.replace(/LEFT/g, (walls.LEFT ? '|' : ' '));
+        representation = representation.replace('DOWN', (walls.DOWN ? '----' : '    '));
+        return representation;
+    }
+
+    function canOpenWall(dir) {
+        var pX = position[0];
+        var pY = position[1];
+
+        var mX = mazeSize[0];
+        var mY = mazeSize[1];
+        var can = false;
+        switch (dir) {
+            case C.Directions.UP:
+                can = pX !== 0;
+                break;
+            case C.Directions.LEFT:
+                can = pY !== 0;
+                break;
+            case C.Directions.RIGHT:
+                can = pY !== (mX - 1);
+                break;
+            case C.Directions.DOWN:
+                can = pX !== (mY - 1);
+                break;
+        }
+
+        if (pX === 0 || pY === 0) {
+            console.log(position, dir, can);
+        }
+        return can;
+
+        throw new Error('wrong direction');
+    }
     return obj;
 }
