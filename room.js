@@ -11,7 +11,6 @@ function Room() {
     var walls = {};
     var locked = false;
     var position = [0, 0];
-    var mazeSize = [1, 1];
     var maze = [
         [obj]
     ];
@@ -38,6 +37,9 @@ function Room() {
     obj.canOpenWall = canOpenWall;
     obj.getPossibleDirections = getPossibleDirections;
     obj.getVisitedTimes = getVisitedTimes;
+    obj.getMaze = getMaze;
+    obj.setMaze = setMaze;
+    obj.getClosedWalls = getClosedWalls;
 
     /**
      * Define if user can move in provided direction.
@@ -64,6 +66,7 @@ function Room() {
         return locked;
     };
 
+    var mazeSize = [1, 1];
     function setMazeSize(size) {
         mazeSize = size;
     }
@@ -72,6 +75,7 @@ function Room() {
         return mazeSize;
     }
 
+    var position = [0, 0];
     function setPosition(pos) {
         position = pos;
     }
@@ -150,5 +154,25 @@ function Room() {
 
         throw new Error('wrong direction');
     }
+
+    function getMaze() {
+        return maze;
+    }
+
+    function setMaze(m) {
+        maze = m;
+    }
+
+    function getClosedWalls() {
+        var closedWallsCounter = 0;
+        for(var i in walls) {
+            if(walls[i]) {
+                closedWallsCounter += 1;
+            }
+        }
+        return closedWallsCounter;
+    }
+
+
     return obj;
 }

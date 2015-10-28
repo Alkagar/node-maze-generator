@@ -1,14 +1,27 @@
 var should = require('should');
 
-var Room = require('../cell.js');
+var Room = require('../room.js');
 var C = require('../const.js');
 var E = require('../errors.js');
 
 describe('Room', function() {
     it('should expose basic methods', function() {
         var room = Room();
-        (typeof room.canMove).should.be.eql('function');
         (typeof room.getWalls).should.be.eql('function');
+        (typeof room.canMove).should.be.eql('function');
+        (typeof room.setWall).should.be.eql('function');
+        (typeof room.buildRoom).should.be.eql('function');
+        (typeof room.isBuilded).should.be.eql('function');
+        (typeof room.visit).should.be.eql('function');
+        (typeof room.wasVisited).should.be.eql('function');
+        (typeof room.draw).should.be.eql('function');
+        (typeof room.setPosition).should.be.eql('function');
+        (typeof room.getPosition).should.be.eql('function');
+        (typeof room.setMazeSize).should.be.eql('function');
+        (typeof room.getMazeSize).should.be.eql('function');
+        (typeof room.canOpenWall).should.be.eql('function');
+        (typeof room.getPossibleDirections).should.be.eql('function');
+        (typeof room.getVisitedTimes).should.be.eql('function');
     });
 
     it('should return possible directions', function() {
@@ -33,21 +46,22 @@ describe('Room', function() {
 
     it('should not throw on correct direction', function() {
         var room = Room();
+        room.canMove(C.Directions.UP);
         should(function() {
             room.canMove(C.Directions.UP);
-        }).not.throw(E.NotPossibleDirectionError);
+        }).not.throw(Error);
 
         should(function() {
             room.canMove(C.Directions.DOWN);
-        }).not.throw(E.NotPossibleDirectionError);
+        }).not.throw();
 
         should(function() {
             room.canMove(C.Directions.LEFT);
-        }).not.throw(E.NotPossibleDirectionError);
+        }).not.throw();
 
         should(function() {
             room.canMove(C.Directions.RIGHT);
-        }).not.throw(E.NotPossibleDirectionError);
+        }).not.throw();
     });
 
     it('should move on correct direction', function() {
@@ -157,10 +171,29 @@ describe('Room', function() {
         walls.should.have.property('DOWN', true);
     });
 
-    it('should draw correctly', function() {
+    it('should get maze correctly', function() {
         var room = Room();
-        room.setWall(C.Directions.LEFT, false);
-        var drawing = room.draw();
-        console.log(drawing);
+        var maze = room.getMaze();
+        maze.should.have.lengthOf(1);
+        maze[0].should.have.lengthOf(1);
+        maze[0][0].should.eql(room);
     });
+
+    function createMaze() {
+        var maze = [
+            [Room(), Room()]
+        ];
+
+        maze[0][0].setMaze(maze);
+        maze[0][1].setMaze(maze);
+        return maze;
+    }
+
+    it('should set maze correctly', function() {
+        var maze = createMaze();
+        maze[0][0].getMaze().should.eql(maze);
+        maze[0][1].getMaze().should.eql(maze);
+    });
+
+
 });
