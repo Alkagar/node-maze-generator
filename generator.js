@@ -1,7 +1,9 @@
+var _ = require('underscore');
+
 var E = require('./errors.js');
 var C = require('./const.js');
 
-var Cell = require('./cell.js');
+var Room = require('./room.js');
 
 module.exports = Generator;
 
@@ -10,8 +12,9 @@ function Generator(dimention) {
     if (dimention && dimention.length && dimention.length !== 2) {
         throw E.WrongMazeDimention();
     }
-    if (!isNaN(dimention[0]) || !isNaN(dimention[1])) {
-        // throw E.WrongMazeDimention();
+    if (isNaN(dimention[0]) || isNaN(dimention[1])) {
+        console.log('here dupa');
+        throw E.WrongMazeDimention();
     }
 
     var x = dimention[0];
@@ -21,16 +24,47 @@ function Generator(dimention) {
     var mazeStart = randomRoom();
     var currentPosition = [];
 
-    function randomDir(walls) {
-        var wallKeys = Object.keys(walls);
-        var closedWalls = wallKeys.reduce(function(prev, curr) {
-            if (walls[curr]) {
-                prev.push(curr);
-            }
-            return prev;
-        }, []);
+    function randomDir(room) {
+        if(room === null) {
+            console.log('DDDD DUPA DDD');
+            return null;
+        }
+        var walls = room.getWalls();
+        var dirs = _.clone(C.PossibleDirections);
+        var dir;
+        var index;
+        var cannotMove = true;
+        var nextRoom = false;
+        var closedWalls = room.getClosedWalls();
+        var roomType = 2 + Math.floor(2 * Math.random())
+        if(closedWalls < roomType) {
+            return null;
+        }
+        do {
+            index = Math.floor(Math.random() * dirs.length);
+            dir = dirs[index];
+            console.log('Current room::', room.getPosition(), dir, dirs, index);
+            if(!room.canMove(dir) && room.canOpenWall(dir)) {
+                var pos = getNewPosition(room, dir);
+                var nextRoom = getRoom(pos);
+                console.log(pos, dir);
+                closedWalls = nextRoom.getClosedWalls();
+                console.log('Current room::', room.getPosition(), ' - checking room for visits: ', nextRoom.getPosition(), ' ::', nextRoom.getVisitedTimes());
 
-        return closedWalls[Math.floor(Math.random() * closedWalls.length)];
+                if(!nextRoom.wasVisited() && closedWalls >= 2) {
+                    cannotMove = false;
+                }
+            }
+            dirs.splice(index, 1);
+            if(dirs.length === 0) {
+                cannotMove = false;
+            }
+        } while (cannotMove);
+        if(dirs.length === 0) {
+            return null;
+        } else {
+            return dir;
+        }
     }
 
 
@@ -38,10 +72,11 @@ function Generator(dimention) {
         for (var i = 0; i < x; i++) {
             maze[i] = [];
             for (var j = 0; j < y; j++) {
-                var room = Cell();
+                var room = Room();
                 maze[i][j] = room;
                 room.setPosition([i, j]);
                 room.setMazeSize([x, y]);
+                room.setMaze(maze);
             }
         }
         return maze;
@@ -62,19 +97,6 @@ function Generator(dimention) {
                 rowB += roomRepresentation[1];
                 rowC += roomRepresentation[2];
                 rowD += roomRepresentation[3];
-
-                // rowA += room.canMove(C.Directions.UP) ? '+  ' : '+--';
-                //
-                // rowB += room.canMove(C.Directions.LEFT) ? ' ' : '|';
-                // rowB += '  ';
-                //
-                // rowC += room.canMove(C.Directions.DOWN) ? '+  ' : '+--';
-                //
-                // if(j === maze[i].length - 1) {
-                //     rowA += '+';
-                //     rowB += room.canMove(C.Directions.RIGHT) ? ' ' : '|';
-                //     rowC += '+';
-                // }
             }
             console.log(rowA);
             console.log(rowB);
@@ -110,6 +132,7 @@ function Generator(dimention) {
         var newX = room.getPosition()[0];
         var newY = room.getPosition()[1];
 
+
         switch (dir) {
             case C.Directions.UP:
                 newX = newX - 1;
@@ -124,6 +147,8 @@ function Generator(dimention) {
                 newX = newX + 1;
                 break;
         }
+
+        console.log(newX, newY);
         return [newX, newY];
     }
 
@@ -131,7 +156,7 @@ function Generator(dimention) {
         var nextPosition = getNewPosition(room, dir);
         var nextRoom = getRoom(nextPosition);
         if(nextRoom !== null) {
-            return nextRoom.wasVisited();
+            // return nextRoom.wasVisited();
         } else {
             console.log(' -- ', nextRoom);
         }
@@ -149,49 +174,29 @@ function Generator(dimention) {
     }
 
     function moveInDirection(room, dir) {
-        console.log(' >> ', room.canOpenWall(dir));
-        console.log('result', room.canOpenWall(dir) && !nextRoomVisited(room, dir));
-        if (room.canOpenWall(dir) && !nextRoomVisited(room, dir)) {
-            room.setWall(dir, false);
-            var nextRoom = getRoom(getNewPosition(room, dir));
-            nextRoom.setWall(opositeDir(dir), false);
-            return true;
-        } else {
-            return false;
-        }
-
+        room.setWall(dir, false);
+        var nextRoom = getRoom(getNewPosition(room, dir));
+        nextRoom.setWall(opositeDir(dir), false);
+        return true;
     }
 
     function stepMazeFrom(room) {
         currentPosition = room.getPosition();
-        console.log('current room visited', room.wasVisited());
-        var dir;
+        // console.log('current room visited', room.wasVisited());
         var moved = false;
-        var walls = room.getWalls();
-        do {
-            dir = randomDir(walls);
-            if(typeof dir === 'undefined') {
-                break;
-            }
-            moved = moveInDirection(room, dir);
-            if(!moved) {
-                console.log('Moved:', currentPosition, moved);
-                delete walls[dir];
-            }
-        } while(!moved && Object.keys(walls).length > 0);
-
-        if(moved) {
-            visitRoom(room);
-            // console.log('We just moved!! Lets go deeper');
-            var nextPosition = getNewPosition(room, dir);
-            var nextRoom = getRoom(nextPosition);
-            stepMazeFrom(nextRoom);
-        } else {
+        var walls = _.clone(room.getWalls());
+        var dir = randomDir(room);
+        if(dir === null) {
             if(lastVisited.length > 0) {
-                // stepMazeFrom(lastVisited.pop());
+                stepMazeFrom(lastVisited.pop());
             } else {
                 console.log('We hit the end!');
             }
+        } else {
+            visitRoom(room);
+            moveInDirection(room, dir);
+            var nextRoom = getRoom(getNewPosition(room, dir));
+            stepMazeFrom(nextRoom);
         }
     }
 
@@ -219,8 +224,6 @@ function Generator(dimention) {
                 return pX !== (mY - 1);
         }
     }
-
-
 
     obj.randomDir = randomDir;
     obj.generateMazeArray = generateMazeArray;
